@@ -1,32 +1,31 @@
 -- =============================================================================
 -- BINN HUB: MAIN LOADER (BOOTSTRAPPER) - CRE: DANG NGUYEN THIEN PHUC
--- BRAND COLOR: DARK GREEN / EMERALD EDITION
+-- BRAND COLOR: DARK GREEN / EMERALD EDITION (OPTIMIZED & FIXED)
 -- =============================================================================
 
 local CoreGui = game:GetService("CoreGui")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 
+-- Tự động dọn dẹp bản cũ nếu sếp chạy lại Loader
+if CoreGui:FindFirstChild("BinnHub-MainLoader") then
+    CoreGui["BinnHub-MainLoader"]:Destroy()
+end
+
 local ScreenGui = Instance.new("ScreenGui", CoreGui)
 ScreenGui.Name = "BinnHub-MainLoader"
 ScreenGui.ResetOnSpawn = false
 
--- Tự động dọn dẹp bản cũ nếu sếp chạy lại Loader
-if CoreGui:FindFirstChild("BinnHub-MainLoader") and CoreGui["BinnHub-MainLoader"] ~= ScreenGui then
-    CoreGui["BinnHub-MainLoader"]:Destroy()
-end
-
 -- TÔNG MÀU THƯƠNG HIỆU MỚI (XANH LÁ ĐẬM & XANH NEON)
-local BrandColor = Color3.fromRGB(0, 180, 70) -- Xanh lá thương hiệu
-local DarkGreen = Color3.fromRGB(0, 100, 35)   -- Xanh lá đậm làm viền/nền
+local BrandColor = Color3.fromRGB(0, 180, 70) 
+local DarkGreen = Color3.fromRGB(0, 100, 35)   
 
 -- [1. KHUNG CHÍNH - MAIN FRAME]
 local Main = Instance.new("Frame", ScreenGui)
 Main.Size = UDim2.fromOffset(360, 280)
 Main.Position = UDim2.new(0.5, -180, 0.5, -140)
-Main.BackgroundColor3 = Color3.fromRGB(12, 16, 13) -- Nền đen ánh xanh đậm
+Main.BackgroundColor3 = Color3.fromRGB(12, 16, 13) 
 Main.Active = true
-Main.Draggable = true
 Main.ClipsDescendants = true
 
 local MainCorner = Instance.new("UICorner", Main)
@@ -35,6 +34,27 @@ MainCorner.CornerRadius = UDim.new(0, 10)
 local MainStroke = Instance.new("UIStroke", Main)
 MainStroke.Color = DarkGreen
 MainStroke.Thickness = 2
+
+-- HÀM KÉO THẢ MƯỢT MÀ CHUYÊN NGHIỆP (THAY THẾ DRAGGABLE)
+local dragStart, startPos
+local function updateInput(input)
+    local delta = input.Position - dragStart
+    Main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+end
+Main.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragStart = input.Position
+        startPos = Main.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then dragStart = nil end
+        end)
+    end
+end)
+Main.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        if dragStart then updateInput(input) end
+    end
+end)
 
 -- [2. TIÊU ĐỀ LOADER]
 local Title = Instance.new("TextLabel", Main)
@@ -123,12 +143,25 @@ end)
 
 -- [3. HÀM LOGIC KHI BẤM NÚT (KHỞI CHẠY SCRIPT)]
 local function LaunchScript(name, link)
-    ScreenGui:Destroy() -- Đóng bộ chọn loader mẹ
+    Main.Visible = false -- Ẩn giao diện đi trước để tạo cảm giác mượt mà
+    ToggleButton.Visible = false
+    
     task.spawn(function()
-        local delayTime = math.random(2, 4)
+        local delayTime = math.random(1, 2) -- Giảm bớt delay cho sếp đỡ đợi lâu
         print("[BINN LOADER] Đang kích hoạt " .. name .. "...")
         task.wait(delayTime)
-        loadstring(game:HttpGet(link))()
+        
+        -- Chạy script chính thành công
+        local success, err = pcall(function()
+            loadstring(game:HttpGet(link))()
+        end)
+        
+        if success then
+            ScreenGui:Destroy() -- Chỉ hủy Loader Mẹ sau khi script con đã được kích hoạt thành công!
+        else
+            warn("[BINN LOADER] Lỗi khi tải script: " .. tostring(err))
+            Main.Visible = true -- Nếu lỗi thì hiện lại bảng để chọn bản khác
+        end
     end)
 end
 
@@ -146,7 +179,7 @@ layout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 local function CreateMenuButton(text, subText, order, callback)
     local btn = Instance.new("TextButton", ButtonContainer)
     btn.Size = UDim2.new(0.88, 0, 0, 45)
-    btn.BackgroundColor3 = Color3.fromRGB(22, 28, 24) -- Nền nút tối
+    btn.BackgroundColor3 = Color3.fromRGB(22, 28, 24) 
     btn.Text = ""
     btn.LayoutOrder = order
     
@@ -171,7 +204,7 @@ local function CreateMenuButton(text, subText, order, callback)
     detailText.TextSize = 10
     detailText.BackgroundTransparency = 1
 
-    -- Hiệu ứng Hover chuột (Đổi nền sang xanh lá đậm và chữ sang xanh sáng)
+    -- Hiệu ứng Hover chuột
     btn.MouseEnter:Connect(function()
         TweenService:Create(btn, TweenInfo.new(0.2), {BackgroundColor3 = DarkGreen}):Play()
         TweenService:Create(mainText, TweenInfo.new(0.2), {TextColor3 = Color3.fromRGB(150, 255, 180)}):Play()
@@ -196,6 +229,6 @@ CreateMenuButton("🍌 BINN BANANA HUB", "Custom Edition - Specialized for Blox 
     LaunchScript("Binn Banana Hub", "https://raw.githubusercontent.com/Binn-nguyen/Banana-Hub/refs/heads/main/Phucdepzai-Banana.lua")
 end)
 
-CreateMenuButton("👑 BINN PREMIUM VIP", "Advanced Features & Ultimate Optimization", 3, function()
-    LaunchScript("Binn Premium", "https://raw.githubusercontent.com/Dev-GravityHub/BloxFruit/refs/heads/main/MainPremium.lua")
+CreateMenuButton("👑 BINN Redz remake", "Advanced Features & Ultimate Optimization", 3, function()
+    LaunchScript("Binn Premium", "https://raw.githubusercontent.com/Binn-nguyen/Binn-redz/refs/heads/main/LuaCrack.lua")
 end)
